@@ -1,0 +1,73 @@
+name: batex
+
+services:
+  frontend:
+    restart: always
+    image: tscript3r/batex-fe:latest
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - batex-network
+
+  backend:
+    restart: always
+    image: tscript3r/batex-be:latest
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+    ports:
+      - "8080:8080"
+    networks:
+      - batex-network
+    depends_on:
+      - postgres
+      - osrm
+
+  osrm:
+    restart: always
+    image: osrm/osrm-backend:latest
+    ports:
+      - "5000:5000"
+    volumes:
+      - ${OSRM_DATA}:/data
+    command: >
+      osrm-routed --algorithm mld /data/poland-latest.osrm
+    networks:
+      - batex-network
+
+  postgres:
+    image: postgres:17.2-alpine3.21
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - ${DB_PORT}:5432
+    networks:
+      - batex-network
+    volumes:
+      - batexdb:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME} -h localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  batexdb:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DB_DIRECTORY}
+
+networks:
+  batex-network:
+    driver: bridge
