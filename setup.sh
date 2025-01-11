@@ -26,3 +26,5 @@ echo ''
 docker run --name osrm-data-builder-3 -t -v "${PWD}:/data" osrm/osrm-backend osrm-customize /data/${OSM_PBF}
 docker stop osrm-data-builder-1 osrm-data-builder-2 osrm-data-builder-3
 docker rm osrm-data-builder-1 osrm-data-builder-2 osrm-data-builder-3
+
+mkdir db
